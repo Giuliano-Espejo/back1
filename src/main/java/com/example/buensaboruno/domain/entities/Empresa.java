@@ -22,10 +22,10 @@ public class Empresa extends Base{
 
     private String nombre;
     private String razonSocial;
-    private Integer cuil;
+    private Long cuil;
 
     @OneToMany(mappedBy = "empresa",cascade = CascadeType.REFRESH,fetch = FetchType.LAZY)
     @ToString.Exclude
     @Builder.Default
-    private Set<Sucursal> Sucursales= new HashSet<>();
+    private Set<Sucursal> sucursales= new HashSet<>();
 }

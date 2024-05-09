@@ -4,7 +4,6 @@ import com.example.buensaboruno.domain.entities.*;
 import com.example.buensaboruno.domain.enums.*;
 import com.example.buensaboruno.repositories.*;
 import jakarta.transaction.Transactional;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
@@ -128,7 +128,7 @@ public class BuensaborunoApplication {
 
 			// Crear 1 empresa, 2 sucursales para esa empresa y los Domicilios para esas sucursales
 
-			Empresa empresaCarlos = Empresa.builder().nombre("Lo de Carlos").cuil(30546780).razonSocial("Venta de Alimentos").build();
+			Empresa empresaCarlos = Empresa.builder().nombre("Lo de Carlos").cuil(30546780L).razonSocial("Venta de Alimentos").build();
 			empresaRepository.save(empresaCarlos);
 
 			Sucursal sucursalGuaymallen = Sucursal.builder().
@@ -145,7 +145,7 @@ public class BuensaborunoApplication {
 
 			Domicilio domicilioGaboto = Domicilio.builder().cp(7600).calle("Gaboto").numero(3475).
 					localidad(localidad2).build();
-// GRABAMOS DOMICILIOS
+			// GRABAMOS DOMICILIOS
 			domicilioRepository.save(domicilioBerutti);
 			domicilioRepository.save(domicilioGaboto);
 
@@ -160,10 +160,10 @@ public class BuensaborunoApplication {
 			//ASIGNAMOS EMPRESA A SUCURSALES
 			sucursalGuaymallen.setEmpresa(empresaCarlos);
 			sucursalMarDelPlata.setEmpresa(empresaCarlos);
-// Grabo las sucursales
+			// Grabo las sucursales
 			sucursalRepository.save(sucursalGuaymallen);
 			sucursalRepository.save(sucursalMarDelPlata);
-// Grabi empresa
+			// Grabi empresa
 			empresaRepository.save(empresaCarlos);
 
 			// Crear Categorías de productos y subCategorías de los mismos
@@ -202,12 +202,12 @@ public class BuensaborunoApplication {
 			categoriaInsumos.getSucursales().add(sucursalGuaymallen);
 			// Cargo las categorias a la sucursal guaymallen
 			sucursalGuaymallen.getCategorias().add(categoriaInsumos);
-		sucursalGuaymallen.getCategorias().add(categoriaBebidas);
-		sucursalGuaymallen.getCategorias().add(categoriaGaseosas);
-		sucursalGuaymallen.getCategorias().add(categoriaTragos);
-		sucursalGuaymallen.getCategorias().add(categoriaPizzas);
+			sucursalGuaymallen.getCategorias().add(categoriaBebidas);
+			sucursalGuaymallen.getCategorias().add(categoriaGaseosas);
+			sucursalGuaymallen.getCategorias().add(categoriaTragos);
+			sucursalGuaymallen.getCategorias().add(categoriaPizzas);
 			logger.info("{}",sucursalGuaymallen);
-// Grabo las categorias que vende esa sucursal
+			// Grabo las categorias que vende esa sucursal
 			sucursalRepository.save(sucursalGuaymallen);
 
 			logger.info("---------------saque el save de abajo-------------------");
@@ -498,6 +498,101 @@ public class BuensaborunoApplication {
 			pedido.setFactura(facturaBuilder);
 
 			pedidoRepository.save(pedido);
+
+
+			//Prueba de carga perezosa
+			//Empresa-Sucursal
+			//Sucursal-Promocion
+			//Sucursal-Categoria
+			//Sucursal-Empleado
+
+			Domicilio domicilioSucu1 = Domicilio.builder().cp(5519).calle("calle1").numero(2684).piso(0).nroDpto(5).
+					localidad(localidad1).build();
+
+			domicilioRepository.save(domicilioSucu1);
+
+			Domicilio domicilioSucu2 = Domicilio.builder().cp(5519).calle("calle2").numero(2684).piso(0).nroDpto(5).
+					localidad(localidad1).build();
+			domicilioRepository.save(domicilioSucu2);
+
+			Sucursal sucursal = Sucursal.builder()
+					.nombre("sucursal prueba")
+					.domicilio(domicilioSucu1)
+					.horarioApertura(LocalTime.of(12,30,00))
+					.horarioApertura(LocalTime.of(20,00,00))
+					.build();
+			sucursalRepository.save(sucursal);
+			Sucursal sucursal2 = Sucursal.builder()
+					.nombre("sucursal prueba2")
+					.domicilio(domicilioSucu2)
+					.horarioApertura(LocalTime.of(12,30,00))
+					.horarioApertura(LocalTime.of(20,00,00))
+					.build();
+			sucursalRepository.save(sucursal2);
+
+			Empresa empresa = Empresa.builder()
+					.nombre("Empresa de prueba")
+					.cuil(999999999L)
+					.razonSocial("Razon social")
+					.build();
+			empresaRepository.save(empresa);
+
+			Categoria categoria = Categoria.builder()
+					.denominacion("Categoria de prueba")
+					.build();
+			categoriaRepository.save(categoria);
+			/*
+			//PRUEBA LAZY -> FALLA
+			var empresaRepo = empresaRepository.findById(2L);
+			if(empresaRepo.isPresent()){
+				Optional<Sucursal> sucursalRepo = sucursalRepository.findById(3L);
+				Optional<Sucursal> sucursalRepo2 = sucursalRepository.findById(4L);
+				if(sucursalRepo2.isPresent() && sucursalRepo.isPresent()){
+					empresaRepo.get().getSucursales().add(sucursalRepo.get());
+					empresaRepo.get().getSucursales().add(sucursalRepo2.get());
+					empresaRepository.save(empresaRepo.get());
+				}
+			}*/
+			var categoriaRep = categoriaRepository.findWithSucursalesById(6L);//CON FINDBYID NO SE PUEDE AÑADIR SUCURSALES POR LAZY
+			var empresaRepo = empresaRepository.findWithSucursalesById(2L);
+			Sucursal sucursalRepo = sucursalRepository.findWithEmpleadosById(3L);//CON FINDBYID NO SE PUEDE AÑADIR EMPLEADOS POR LAZY
+			Optional<Sucursal> sucursalRepo2 = sucursalRepository.findById(4L);
+			Sucursal sucursalRepo3 = sucursalRepository.findWithCategoriasById(3L);//CON FINDBYID NO SE PUEDE AÑADIR CATEGORIAS POR LAZY
+			if(sucursalRepo2.isPresent()){
+				empresaRepo.getSucursales().add(sucursalRepo);
+				empresaRepo.getSucursales().add(sucursalRepo2.get());
+				empresaRepository.save(empresaRepo);
+				sucursalRepo.setEmpresa(empresaRepo);
+				sucursalRepo2.get().setEmpresa(empresaRepo);
+				sucursalRepo3.getCategorias().add(categoriaRep);
+				sucursalRepository.save(sucursalRepo);
+				sucursalRepository.save(sucursalRepo2.get());
+				sucursalRepository.save(sucursalRepo3);
+				categoriaRep.getSucursales().add(sucursalRepo);
+				categoriaRep.getSucursales().add(sucursalRepo2.get());
+				var empleado1 = empleadoRepository.findById(2L);
+				if(empleado1.isPresent()){
+					sucursalRepo.getEmpleados().add(empleado1.get());
+
+					sucursalRepository.save(sucursalRepo);
+				}
+			}
+
+			logger.info("------------Nombre de sucursales de la empresa id 2------------");
+			empresaRepo.getSucursales()
+					.stream()
+					.map(Sucursal::getNombre)
+					.forEach(logger::info);
+
+			logger.info("------------Nombre de empresa de la sucursal id 3------------");
+			logger.info("{}",sucursalRepo.getEmpresa().getNombre());
+			logger.info("------------Empleados de la sucursal id 3------------");
+			sucursalRepo.getEmpleados().stream()
+					.map(Empleado::getNombre)
+					.forEach(logger::info);
+
+			logger.info("------------Nombre de empresa de la sucursal id 4------------");
+			logger.info("{}",sucursalRepo2.get().getEmpresa().getNombre());
 
 			logger.info("----------------Sucursal Guaymallen ---------------------");
 			logger.info("{}",sucursalGuaymallen);
